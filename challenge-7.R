@@ -35,10 +35,38 @@ library(tidyverse)
 library(sf)
 
 # load data for plot
+stadtteile <- readRDS("data/stadtteile_profil_updated.rds")
+
+stadtteile <- stadtteile %>% 
+  mutate(arbeitslosenanteil_in_percent_dez_2019 = round(as.numeric(arbeitslosenanteil_in_percent_dez_2019), 1),
+         anteil_der_bevolkerung_mit_migrations_hintergrund_in_percent = round(anteil_der_bevolkerung_mit_migrations_hintergrund_in_percent,1)
+  )
 
 # plotly
+plot <- plot_ly(data = stadtteile,
+                y = ~arbeitslosenanteil_in_percent_dez_2019, 
+                x = ~anteil_der_bevolkerung_mit_migrations_hintergrund_in_percent, 
+                type = "scatter", mode = "markers",
+                hoverinfo = 'text',
+                text = ~paste('</br> Migartionsanteil: ', anteil_der_bevolkerung_mit_migrations_hintergrund_in_percent,
+                              '</br> Arbeitslosenanteil: ', arbeitslosenanteil_in_percent_dez_2019,
+                              '</br> Stadtteil: ', stadtteil))
 
+plot <- plot %>% 
+layout(title = 'Verhältnis von arbeitslosen Menschen und Menschen mit Migrationshintergrund in Hamburg',
+      xaxis = list(title = 'Migrationshintergrund in %'),
+      yaxis = list(title = 'Arbeitslose in %'))
+
+# safe plot
+plot
+htmlwidgets::saveWidget(as_widget(plot), "myfirstplot.html")
+
+# interpretation: The higher the proportion of the population with a migration background in a district, 
+#                  the higher the unemployment rate 
+                       
 # load data for map
+stadtteile_gps <- readRDS("data/stadtteile_wsg84.RDS")
+colnames(stadtteile_gps)[colnames(stadtteile_gps) %in% c("Stadtteil", "Bezirk")] <- c("stadtteil", "bezirk")
 
 # join data
 stadtteile <- stadtteile %>% 
@@ -49,15 +77,18 @@ stadtteile <- stadtteile %>%
 bins <- c(0, 2, 4, 6, 8, 10, Inf)
 pal <- colorBin("YlOrRd", domain = stadtteile$arbeitslosenanteil_in_percent_dez_2019, bins = bins)
 
-leaflet() %>% 
-  addProviderTiles() %>% 
-  setView() %>% 
-  addPolygons(data = ,
+map <- leaflet() %>% 
+  addProviderTiles(providers$CartoDB.Positron) %>% 
+  setView(9.993682, 53.551086, zoom = 10) %>% 
+  addPolygons(data = stadtteile,
               fillColor = ~pal(arbeitslosenanteil_in_percent_dez_2019),
-              weight = ,
-              opacity = ,
-              color = ,
-              fillOpacity = )
+              weight = 1,
+              opacity = 1,
+              color = "white",
+              fillOpacity = 0.75)
+  
 
-
+# safe map
+map
+htmlwidgets::saveWidget(as_widget(map), "myfirstmap.html")
 
